@@ -44,17 +44,21 @@ def bounce_back_sphere(
     radius: float,
     squirmer_v: np.ndarray,
     squirmer_omega: np.ndarray,
-    orientation: np.ndarray,
-    B1: float,
-    B2: float,
+    mass: float,
+    impulse_out: np.ndarray,
 ) -> None:
     """Impermeable bounce-back on a moving sphere with rigid-body wall velocity.
 
     Enforces no-penetration by reflecting the normal component of the relative
-    velocity v_rel = v - (V + Ω × (x_s - R)) at the surface. The tangential
-    component is left unchanged here; tangential slip is imposed statistically
-    via ghost particles during collision.
+    velocity v_rel = v - (V + Ω × (x_s - R)) at the surface. Tangential
+    component is left unchanged; tangential slip is handled statistically via
+    ghost particles during collision.
     """
+
+    # reset impulse accumulator
+    impulse_out[0] = 0.0
+    impulse_out[1] = 0.0
+    impulse_out[2] = 0.0
 
     n_particles = r.shape[0]
     eps = 1e-7
@@ -101,9 +105,12 @@ def bounce_back_sphere(
         uw2 = squirmer_v[2] + cx2
 
         # Relative velocity and reflection of normal component
-        vrel0 = v[i, 0] - uw0
-        vrel1 = v[i, 1] - uw1
-        vrel2 = v[i, 2] - uw2
+        v_old0 = v[i, 0]
+        v_old1 = v[i, 1]
+        v_old2 = v[i, 2]
+        vrel0 = v_old0 - uw0
+        vrel1 = v_old1 - uw1
+        vrel2 = v_old2 - uw2
         vdotn = vrel0 * nx + vrel1 * ny + vrel2 * nz
         # reflect normal if penetrating
         if vdotn < 0.0:
@@ -111,25 +118,24 @@ def bounce_back_sphere(
             vrel1 = vrel1 - 2.0 * vdotn * ny
             vrel2 = vrel2 - 2.0 * vdotn * nz
 
-        # Impose tangential slip: set tangential part of relative velocity to u_slip
-        n_vec = np.array([nx, ny, nz], dtype=r.dtype)
-        us = _slip_velocity(n_vec, orientation, B1, B2)
-        # Remove tangential component from vrel, then add desired us
-        vdotn2 = vrel0 * nx + vrel1 * ny + vrel2 * nz
-        vtan0 = vrel0 - vdotn2 * nx
-        vtan1 = vrel1 - vdotn2 * ny
-        vtan2 = vrel2 - vdotn2 * nz
-        # set tangential to slip
-        vrel0 = vdotn2 * nx + us[0]
-        vrel1 = vdotn2 * ny + us[1]
-        vrel2 = vdotn2 * nz + us[2]
+        # Do not impose tangential slip here; keep tangential component unchanged
+        # Compute normal component after reflection already encoded in vrel*
+        # vrel = v_n n + v_t; here we keep v_t as is
 
         # Update velocity and place at surface
-        v[i, 0] = uw0 + vrel0
-        v[i, 1] = uw1 + vrel1
-        v[i, 2] = uw2 + vrel2
+        v_new0 = uw0 + vrel0
+        v_new1 = uw1 + vrel1
+        v_new2 = uw2 + vrel2
+        v[i, 0] = v_new0
+        v[i, 1] = v_new1
+        v[i, 2] = v_new2
         r[i, 0] = xs0
         r[i, 1] = xs1
         r[i, 2] = xs2
+
+        # Accumulate impulse on squirmer: -Δp_real
+        impulse_out[0] += -(mass * (v_new0 - v_old0))
+        impulse_out[1] += -(mass * (v_new1 - v_old1))
+        impulse_out[2] += -(mass * (v_new2 - v_old2))
 
 

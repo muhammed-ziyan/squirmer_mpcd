@@ -75,18 +75,14 @@ def prepare_ghosts_per_cell(
         intersects = (d - cell_radius) < radius and (d + cell_radius) > radius
         inside = d + cell_radius <= radius
         outside = d - cell_radius >= radius
-        if outside:
+        # Only apply ghosts in the near-surface shell to enforce tangential slip
+        if outside or inside:
+            continue
+        if not intersects:
             continue
 
-        # approximate solid fraction within cell
-        if inside:
-            frac = 1.0
-        elif intersects:
-            # midpoint rule proxy
-            frac = max(0.0, min(1.0, (radius + cell_radius - d) / (2 * cell_radius)))
-        else:
-            # no overlap
-            frac = 0.0
+        # approximate shell volume fraction via overlap proxy
+        frac = max(0.0, min(1.0, (radius + cell_radius - d) / (2 * cell_radius)))
         if frac <= 0.0:
             continue
 
@@ -144,14 +140,12 @@ def prepare_ghosts_per_cell_into(
         intersects = (d - cell_radius) < radius and (d + cell_radius) > radius
         inside = d + cell_radius <= radius
         outside = d - cell_radius >= radius
-        if outside:
+        # Only apply ghosts in the near-surface shell (intersecting cells)
+        if outside or inside:
             continue
-        if inside:
-            frac = 1.0
-        elif intersects:
-            frac = max(0.0, min(1.0, (radius + cell_radius - d) / (2 * cell_radius)))
-        else:
-            frac = 0.0
+        if not intersects:
+            continue
+        frac = max(0.0, min(1.0, (radius + cell_radius - d) / (2 * cell_radius)))
         if frac <= 0.0:
             continue
         lam = n0 * frac

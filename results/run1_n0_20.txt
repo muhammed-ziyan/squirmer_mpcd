@@ -1,0 +1,67 @@
+$ python scripts/run_single_squirmer.py --grid 32 --n0 20 --a 4 --B1 0.03 --steps 3000 --dtype float32 --live --plot-interval 200 --beta 1.0
+======================================================================
+MPCD Squirmer Simulation - Starting
+======================================================================
+Simulation parameters:
+  Grid size: 32^3
+  Particles per cell (n0): 20
+  Squirmer radius (a): 4.0
+  B1 parameter: 0.03
+  B2 parameter: 0.0
+  Time step (dt): 0.1
+  SRD rotation angle: 130.0°
+  Temperature: 1.0
+  Total steps: 3000
+  Random seed: 1234
+  Data type: float32
+======================================================================
+✓ Random number generator seeded
+✓ Initializing 655,360 particles in 32,768 cells (32x32x32)
+✓ Particles initialized with Maxwellian velocities
+✓ Squirmer initialized at center: [16. 16. 16.]
+
+======================================================================
+Starting simulation loop...
+======================================================================
+
+[  3.3%] Step 100/3000 | Speed: 0.016604
+[  6.7%] Step 200/3000 | Speed: 0.035690
+[ 10.0%] Step 300/3000 | Temperature: 1.0049 | Speed: 0.010422 | Position: (15.40, 15.86, 16.05)
+[ 13.3%] Step 400/3000 | Speed: 0.013338
+[ 16.7%] Step 500/3000 | Speed: 0.034652
+[ 20.0%] Step 600/3000 | Temperature: 1.0053 | Speed: 0.042869 | Position: (14.91, 15.87, 15.84)
+[ 23.3%] Step 700/3000 | Speed: 0.036055
+[ 26.7%] Step 800/3000 | Speed: 0.024303
+[ 30.0%] Step 900/3000 | Temperature: 1.0057 | Speed: 0.022043 | Position: (14.18, 16.04, 15.64)
+[ 33.3%] Step 1000/3000 | Speed: 0.015761
+[ 36.7%] Step 1100/3000 | Speed: 0.039441
+[ 40.0%] Step 1200/3000 | Temperature: 1.0051 | Speed: 0.043464 | Position: (13.63, 16.01, 15.65)
+[ 43.3%] Step 1300/3000 | Speed: 0.010756
+[ 46.7%] Step 1400/3000 | Speed: 0.017414
+[ 50.0%] Step 1500/3000 | Temperature: 1.0048 | Speed: 0.042304 | Position: (13.10, 16.23, 15.66)
+[ 53.3%] Step 1600/3000 | Speed: 0.036890
+[ 56.7%] Step 1700/3000 | Speed: 0.027024
+[ 60.0%] Step 1800/3000 | Temperature: 1.0045 | Speed: 0.049087 | Position: (12.71, 16.12, 15.92)
+[ 63.3%] Step 1900/3000 | Speed: 0.019105
+[ 66.7%] Step 2000/3000 | Speed: 0.030554
+[ 70.0%] Step 2100/3000 | Temperature: 1.0042 | Speed: 0.031127 | Position: (12.34, 16.11, 16.08)
+[ 73.3%] Step 2200/3000 | Speed: 0.025826
+[ 76.7%] Step 2300/3000 | Speed: 0.054608
+[ 80.0%] Step 2400/3000 | Temperature: 1.0037 | Speed: 0.025490 | Position: (11.75, 15.96, 16.06)
+[ 83.3%] Step 2500/3000 | Speed: 0.038706
+[ 86.7%] Step 2600/3000 | Speed: 0.031734
+[ 90.0%] Step 2700/3000 | Temperature: 1.0036 | Speed: 0.024194 | Position: (11.41, 15.67, 16.16)
+[ 93.3%] Step 2800/3000 | Speed: 0.030480
+[ 96.7%] Step 2900/3000 | Speed: 0.015515
+[100.0%] Step 3000/3000 | Temperature: 1.0037 | Speed: 0.015244 | Position: (10.94, 15.62, 16.32)
+
+======================================================================
+Simulation completed!
+======================================================================
+
+Results:
+  Final speed (U): 0.015244
+  Average speed (U_avg): 0.028265
+  Expected speed (2/3 B1): 0.020000
+  Error (final): 0.004756 (23.78%)
+  Error (average): 0.008265 (41.33%)

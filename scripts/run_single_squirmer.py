@@ -241,18 +241,23 @@ def main() -> None:
     print("=" * 70)
     
     U_meas = float(np.linalg.norm(squirmer.velocity))
+    U_avg = float(np.mean(speed_hist))
     U_ref = 2.0 * args.B1 / 3.0
     error = abs(U_meas - U_ref)
     error_pct = 100.0 * error / U_ref if U_ref > 0 else 0.0
+    error_avg = abs(U_avg - U_ref)
+    error_avg_pct = 100.0 * error_avg / U_ref if U_ref > 0 else 0.0
     
     print(f"\nResults:")
-    print(f"  Measured speed (U): {U_meas:.6f}")
+    print(f"  Final speed (U): {U_meas:.6f}")
+    print(f"  Average speed (U_avg): {U_avg:.6f}")
     print(f"  Expected speed (2/3 B1): {U_ref:.6f}")
-    print(f"  Error: {error:.6f} ({error_pct:.2f}%)")
+    print(f"  Error (final): {error:.6f} ({error_pct:.2f}%)")
+    print(f"  Error (average): {error_avg:.6f} ({error_avg_pct:.2f}%)")
     
-    if error_pct < 5.0:
+    if error_avg_pct < 5.0:
         print("  ✓ Excellent agreement with theory!")
-    elif error_pct < 10.0:
+    elif error_avg_pct < 10.0:
         print("  ✓ Good agreement with theory")
     else:
         print("  ⚠ Significant deviation from theory")

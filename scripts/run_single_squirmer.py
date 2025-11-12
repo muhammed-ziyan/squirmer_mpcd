@@ -17,7 +17,7 @@ from mpcd.collision import collide_srd, collide_srd_with_ghosts
 from mpcd.particles import allocate_particles
 from mpcd.diagnostics import temperature as estimate_temperature
 from mpcd.boundary import bounce_back_sphere
-from mpcd.ghost import prepare_ghosts_per_cell_into
+from mpcd.ghost import prepare_ghosts_per_cell_into_with_arm
 from mpcd.squirmer import SquirmerState
 
 
@@ -28,6 +28,8 @@ def main() -> None:
     ap.add_argument("--a", type=float, default=3.0, help="squirmer radius (not used yet)")
     ap.add_argument("--B1", type=float, default=0.03)
     ap.add_argument("--B2", type=float, default=0.0)
+    ap.add_argument("--C1", type=float, default=0.0, help="Azimuthal slip amplitude")
+    ap.add_argument("--misalign-deg", type=float, default=20.0, help="Angle between swirl and propulsion axes (deg)")
     ap.add_argument("--dt", type=float, default=0.1)
     ap.add_argument("--alpha", type=float, default=130.0, help="SRD rotation angle in degrees")
     ap.add_argument("--T", type=float, default=1.0)
@@ -84,9 +86,15 @@ def main() -> None:
     squirmer = SquirmerState(
         position=center.astype(r.dtype),
         velocity=np.zeros(3, dtype=r.dtype),
-        orientation=np.array([1.0, 0.0, 0.0], dtype=r.dtype),
+        orientation=np.array([0.0, 0.0, 1.0], dtype=r.dtype),
         omega=np.zeros(3, dtype=r.dtype),
+        C1=float(args.C1),
+        swirl_axis=None,
     )
+    # Initialize swirl axis misaligned from orientation in x–z plane (rotate around y)
+    phi = math.radians(args.misalign_deg)
+    swirl_axis0 = np.array([math.sin(phi), 0.0, math.cos(phi)], dtype=r.dtype)
+    squirmer.swirl_axis = swirl_axis0 / np.linalg.norm(swirl_axis0)
     # Displaced-fluid mass approximation: rho ~ 1, each SRD particle mass=mass, number density ~ n0 per cell of size a0^3
     squirmer_mass = (4.0 / 3.0) * math.pi * (args.a ** 3) * args.n0 * mass
     # Optional: start close to theoretical speed along orientation
@@ -98,10 +106,87 @@ def main() -> None:
     # Ghost buffers (reused)
     counts = np.zeros(int(nx * ny * nz), dtype=np.int64)
     mu = np.zeros((int(nx * ny * nz), 3), dtype=r.dtype)
+    arm = np.zeros((int(nx * ny * nz), 3), dtype=np.float64)
 
     # history for visualization
     pos_hist = np.zeros((args.steps, 3), dtype=np.float64)
     speed_hist = np.zeros(args.steps, dtype=np.float64)
+
+    # Helix verification helpers
+    def _unwrap_traj(pos: np.ndarray, Lbox: np.ndarray) -> np.ndarray:
+        d = np.diff(pos, axis=0)
+        shift = -np.round(d / Lbox) * Lbox
+        # keep small jumps unchanged
+        for k in range(3):
+            mask = np.abs(d[:, k]) < (Lbox[k] / 2.0)
+            shift[mask, k] = 0.0
+        return np.vstack([pos[0], pos[0] + np.cumsum(d + shift, axis=0)])
+
+    def _pca_axis(seg: np.ndarray) -> np.ndarray:
+        X = seg - np.mean(seg, axis=0, keepdims=True)
+        cov = (X.T @ X) / max(1, X.shape[0] - 1)
+        w, V = np.linalg.eigh(cov)
+        a = V[:, int(np.argmax(w))]
+        nrm = float(np.linalg.norm(a))
+        return a / nrm if nrm > 0 else np.array([0.0, 0.0, 1.0], dtype=np.float64)
+
+    def _circle_fit(xy: np.ndarray) -> tuple[float, np.ndarray, float]:
+        x = xy[:, 0]; y = xy[:, 1]
+        x_ = x - np.mean(x); y_ = y - np.mean(y)
+        Z = np.vstack([x_ * x_ + y_ * y_, x_, y_, np.ones_like(x_)]).T
+        _, _, Vt = np.linalg.svd(Z, full_matrices=False)
+        a, b, c, d = Vt[-1]
+        if abs(a) < 1e-14:
+            return float("nan"), np.array([float("nan"), float("nan")]), float("nan")
+        cx = -b / (2.0 * a); cy = -c / (2.0 * a)
+        R = float(np.sqrt(max(1e-24, (b * b + c * c - 4.0 * a * d)) / (4.0 * a * a)))
+        resid = float(np.sqrt(np.mean((np.sqrt((x_ - cx) ** 2 + (y_ - cy) ** 2) - R) ** 2)))
+        return R, np.array([cx + np.mean(x), cy + np.mean(y)], dtype=np.float64), resid
+
+    def _curvature_torsion(seg: np.ndarray, dt: float) -> tuple[np.ndarray, np.ndarray]:
+        if seg.shape[0] < 7:
+            return np.array([]), np.array([])
+        v = (seg[2:] - seg[:-2]) / (2.0 * dt)  # length N-2
+        a = (seg[2:] - 2.0 * seg[1:-1] + seg[:-2]) / (dt * dt)  # length N-2
+        # jerk aligned with midpoints of v,a
+        j_mid = (a[2:] - a[:-2]) / (2.0 * dt)  # length N-4
+        v_mid = v[1:-1]  # length N-4
+        a_mid = a[1:-1]  # length N-4
+        cross = np.cross(v_mid, a_mid)
+        vnorm3 = (np.linalg.norm(v_mid, axis=1) ** 3 + 1e-24)
+        kappa = np.linalg.norm(cross, axis=1) / vnorm3
+        num = np.abs(np.einsum("ij,ij->i", cross, j_mid))
+        denom = (np.linalg.norm(cross, axis=1) ** 2 + 1e-24)
+        tau = num / denom
+        return kappa, tau
+
+    def _helix_metrics(pos_so_far: np.ndarray, Lbox: np.ndarray, dt: float) -> tuple[float, float, float, float, float, float]:
+        unwrapped = _unwrap_traj(pos_so_far.astype(np.float64), Lbox.astype(np.float64))
+        start = unwrapped.shape[0] // 2
+        seg = unwrapped[start:, :]
+        if seg.shape[0] < 16:
+            return float("nan"), float("nan"), float("nan"), float("nan"), float("nan"), float("nan")
+        axis = _pca_axis(seg[1:] - seg[:-1])
+        # plane basis
+        u = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+        if abs(float(np.dot(u, axis))) > 0.9:
+            u = np.array([0.0, 1.0, 0.0], dtype=np.float64)
+        u = u - float(np.dot(u, axis)) * axis
+        u /= (np.linalg.norm(u) + 1e-24)
+        v = np.cross(axis, u)
+        xy = np.c_[seg @ u, seg @ v]
+        R_fit, _, resid = _circle_fit(xy)
+        kappa, tau = _curvature_torsion(seg, dt)
+        if kappa.size == 0 or tau.size == 0:
+            return R_fit, resid, float("nan"), float("nan"), float("nan"), float("nan")
+        denom = (kappa * kappa + tau * tau + 1e-24)
+        R_geo_series = kappa / denom
+        P_geo_series = 2.0 * math.pi * (tau / denom)
+        R_geo = float(np.median(R_geo_series))
+        P_geo = float(np.median(P_geo_series))
+        cv_R = float(np.std(R_geo_series) / (R_geo + 1e-24))
+        cv_P = float(np.std(P_geo_series) / (P_geo + 1e-24))
+        return R_fit, resid, R_geo, P_geo, cv_R, cv_P
 
     # Optional live visualization setup
     live = bool(args.live)
@@ -154,32 +239,35 @@ def main() -> None:
     for step in range(args.steps):
         # Stream + impermeable bounce on sphere (no tangential slip here)
         imp_bounce = np.zeros(3, dtype=np.float64)
+        tau_bounce = np.zeros(3, dtype=np.float64)
         bounce_back_sphere(
             r, v, args.dt,
             squirmer.position, args.a,
             squirmer.velocity, squirmer.omega,
             mass,
             imp_bounce,
+            tau_bounce,
         )
         wrap_positions(r, L)
         shift = random_shift(a0)
         # Prepare ghosts for slip inside intersected cells
-        prepare_ghosts_per_cell_into(
+        prepare_ghosts_per_cell_into_with_arm(
             L, a0,
             squirmer.position.astype(np.float64), args.a,
             squirmer.orientation.astype(np.float64),
-            args.B1, args.B2, args.n0,
+            args.B1, args.B2, float(args.C1), squirmer.swirl_axis.astype(np.float64), args.n0,
             squirmer.velocity.astype(np.float64),
             squirmer.omega.astype(np.float64),
-            counts, mu,
+            counts, mu, arm,
         )
         imp_coll = np.zeros(3, dtype=np.float64)
+        tau_coll = np.zeros(3, dtype=np.float64)
         collide_srd_with_ghosts(
             r, v, L, a0,
             shift.astype(r.dtype),
             alpha_rad, args.T, mass,
             counts, mu.astype(r.dtype),
-            imp_coll,
+            imp_coll, arm.astype(np.float64), tau_coll,
         )
 
         # Update squirmer velocity and position from total impulse
@@ -188,6 +276,21 @@ def main() -> None:
         squirmer.position += squirmer.velocity * args.dt
         # Periodic wrap of squirmer center
         squirmer.position[:] = squirmer.position - np.floor(squirmer.position / L) * L
+
+        # Update angular dynamics from total torque
+        total_tau = (tau_bounce + tau_coll).astype(np.float64)
+        I = (2.0 / 5.0) * squirmer_mass * (args.a ** 2)
+        if I > 0.0:
+            squirmer.omega = (squirmer.omega + (total_tau / I) * args.dt).astype(r.dtype)
+        # Integrate orientation and swirl axis with ω × a
+        def _advance_axis(ax: np.ndarray, omega: np.ndarray, dt: float) -> np.ndarray:
+            ax_new = ax + dt * np.cross(omega.astype(ax.dtype), ax)
+            nrm = float(np.linalg.norm(ax_new))
+            if nrm > 0.0:
+                ax_new = ax_new / nrm
+            return ax_new.astype(ax.dtype)
+        squirmer.orientation = _advance_axis(squirmer.orientation, squirmer.omega, args.dt)
+        squirmer.swirl_axis = _advance_axis(squirmer.swirl_axis, squirmer.omega, args.dt)
 
         # log history
         pos_hist[step, :] = squirmer.position.astype(np.float64)
@@ -208,6 +311,29 @@ def main() -> None:
                 print(f"[{percentage:5.1f}%] Step {step+1}/{args.steps} | "
                       f"Temperature: {Tinst:.4f} | Speed: {U:.6f} | "
                       f"Position: ({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f})")
+                # Helix diagnostics
+                omega_mag = float(np.linalg.norm(squirmer.omega.astype(np.float64)))
+                if omega_mag > 1e-8:
+                    p_lab = squirmer.orientation.astype(np.float64)
+                    U_par = float(np.dot(squirmer.velocity.astype(np.float64), p_lab))
+                    U_perp = float(np.linalg.norm(squirmer.velocity.astype(np.float64) - U_par * p_lab))
+                    R_helix = U_perp / omega_mag
+                    P_helix = 2.0 * math.pi * U_par / omega_mag
+                    print(f"    [helix] R≈{R_helix:.3g}, pitch≈{P_helix:.3g}, |ω|≈{omega_mag:.3g}")
+                # Helix verification (geometry-based)
+                R_fit, resid, R_geo, P_geo, cv_R, cv_P = _helix_metrics(pos_hist[: step + 1], L, float(args.dt))
+                if np.isfinite(R_fit) and np.isfinite(resid):
+                    print(f"    [helix-verify] circle-fit R={R_fit:.3g}, rms-resid={resid:.3g}")
+                if np.isfinite(R_geo) and np.isfinite(P_geo):
+                    print(f"    [helix-verify] geometric R≈{R_geo:.3g}, pitch≈{P_geo:.3g}, CV(R)≈{cv_R:.2f}, CV(P)≈{cv_P:.2f}")
+                # Persist metrics
+                try:
+                    results_dir = Path("results")
+                    results_dir.mkdir(parents=True, exist_ok=True)
+                    with open(results_dir / "helix_metrics.txt", "a", encoding="utf-8") as f:
+                        f.write(f"step={step+1} pct={percentage:.1f} Rfit={R_fit} resid={resid} Rgeo={R_geo} Pgeo={P_geo} cvR={cv_R} cvP={cv_P}\n")
+                except Exception as _e_metrics:
+                    pass
             elif is_minor_update:
                 # Minor update (every 100 steps, but not a milestone)
                 print(f"[{percentage:5.1f}%] Step {step+1}/{args.steps} | Speed: {U:.6f}")

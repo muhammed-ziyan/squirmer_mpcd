@@ -46,6 +46,7 @@ def bounce_back_sphere(
     squirmer_omega: np.ndarray,
     mass: float,
     impulse_out: np.ndarray,
+    torque_out: np.ndarray,
 ) -> None:
     """Impermeable bounce-back on a moving sphere with rigid-body wall velocity.
 
@@ -59,6 +60,10 @@ def bounce_back_sphere(
     impulse_out[0] = 0.0
     impulse_out[1] = 0.0
     impulse_out[2] = 0.0
+    # reset torque accumulator
+    torque_out[0] = 0.0
+    torque_out[1] = 0.0
+    torque_out[2] = 0.0
 
     n_particles = r.shape[0]
     eps = 1e-7
@@ -134,8 +139,23 @@ def bounce_back_sphere(
         r[i, 2] = xs2
 
         # Accumulate impulse on squirmer: -Δp_real
-        impulse_out[0] += -(mass * (v_new0 - v_old0))
-        impulse_out[1] += -(mass * (v_new1 - v_old1))
-        impulse_out[2] += -(mass * (v_new2 - v_old2))
+        dpx = -(mass * (v_new0 - v_old0))
+        dpy = -(mass * (v_new1 - v_old1))
+        dpz = -(mass * (v_new2 - v_old2))
+        impulse_out[0] += dpx
+        impulse_out[1] += dpy
+        impulse_out[2] += dpz
+
+        # Accumulate torque τ = (x_s - center) × Δp on squirmer
+        rx0 = xs0 - center[0]
+        rx1 = xs1 - center[1]
+        rx2 = xs2 - center[2]
+        # cross product r × dP
+        tx = rx1 * dpz - rx2 * dpy
+        ty = rx2 * dpx - rx0 * dpz
+        tz = rx0 * dpy - rx1 * dpx
+        torque_out[0] += tx
+        torque_out[1] += ty
+        torque_out[2] += tz
 
 

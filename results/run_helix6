@@ -1,0 +1,135 @@
+python scripts/run_single_squirmer.py --grid 32 --n0 60 --a 4 --B1 0.03 --B2 0.0 --C1 0.15 --misalign-deg 45 --steps 6000 --dt 0.1 --T 1.00 --beta 0.0 --three-d --live
+======================================================================
+MPCD Squirmer Simulation - Starting
+======================================================================
+Simulation parameters:
+  Grid size: 32^3
+  Particles per cell (n0): 60
+  Squirmer radius (a): 4.0
+  B1 parameter: 0.03
+  B2 parameter: 0.0
+  Time step (dt): 0.1
+  SRD rotation angle: 130.0°
+  Temperature: 1.0
+  Total steps: 6000
+  Random seed: 1234
+  Data type: float32
+======================================================================
+✓ Random number generator seeded
+✓ Initializing 1,966,080 particles in 32,768 cells (32x32x32)
+✓ Particles initialized with Maxwellian velocities
+✓ Squirmer initialized at center: [16. 16. 16.]
+
+======================================================================
+Starting simulation loop...
+======================================================================
+
+[  1.7%] Step 100/6000 | Speed: 0.025010
+[  3.3%] Step 200/6000 | Speed: 0.031776
+[  5.0%] Step 300/6000 | Speed: 0.031180
+[  6.7%] Step 400/6000 | Speed: 0.027775
+[  8.3%] Step 500/6000 | Speed: 0.032572
+[ 10.0%] Step 600/6000 | Temperature: 1.0017 | Speed: 0.027077 | Position: (16.33, 16.39, 17.12)
+    [helix] R≈0.0246, pitch≈4.6, |ω|≈0.037
+    [helix-verify] circle-fit R=0.478, rms-resid=0.00503
+    [helix-verify] geometric R≈0.00215, pitch≈0.0144, CV(R)≈1.66, CV(P)≈0.94
+[ 11.7%] Step 700/6000 | Speed: 0.028497
+[ 13.3%] Step 800/6000 | Speed: 0.028570
+[ 15.0%] Step 900/6000 | Speed: 0.025750
+[ 16.7%] Step 1000/6000 | Speed: 0.020059
+[ 18.3%] Step 1100/6000 | Speed: 0.021228
+[ 20.0%] Step 1200/6000 | Temperature: 1.0013 | Speed: 0.030835 | Position: (17.54, 16.70, 17.26)
+    [helix] R≈0.101, pitch≈5.36, |ω|≈0.0359
+    [helix-verify] circle-fit R=48.1, rms-resid=0.0116
+    [helix-verify] geometric R≈0.00213, pitch≈0.0144, CV(R)≈1.82, CV(P)≈1.09
+[ 21.7%] Step 1300/6000 | Speed: 0.027210
+[ 23.3%] Step 1400/6000 | Speed: 0.017050
+[ 25.0%] Step 1500/6000 | Speed: 0.024374
+[ 26.7%] Step 1600/6000 | Speed: 0.022887
+[ 28.3%] Step 1700/6000 | Speed: 0.032710
+[ 30.0%] Step 1800/6000 | Temperature: 1.0010 | Speed: 0.005511 | Position: (17.96, 16.22, 17.99)
+    [helix] R≈0.124, pitch≈-0.511, |ω|≈0.0372
+    [helix-verify] circle-fit R=3.91, rms-resid=0.0336
+    [helix-verify] geometric R≈0.0018, pitch≈0.013, CV(R)≈1.88, CV(P)≈1.07
+[ 31.7%] Step 1900/6000 | Speed: 0.020752
+[ 33.3%] Step 2000/6000 | Speed: 0.020949
+[ 35.0%] Step 2100/6000 | Speed: 0.022698
+[ 36.7%] Step 2200/6000 | Speed: 0.019304
+[ 38.3%] Step 2300/6000 | Speed: 0.030546
+[ 40.0%] Step 2400/6000 | Temperature: 1.0006 | Speed: 0.026370 | Position: (17.95, 16.88, 18.77)
+    [helix] R≈0.061, pitch≈4.44, |ω|≈0.0372
+    [helix-verify] circle-fit R=7.19, rms-resid=0.0807
+    [helix-verify] geometric R≈0.00169, pitch≈0.0115, CV(R)≈1.79, CV(P)≈1.17
+[ 41.7%] Step 2500/6000 | Speed: 0.025441
+[ 43.3%] Step 2600/6000 | Speed: 0.015708
+[ 45.0%] Step 2700/6000 | Speed: 0.023756
+[ 46.7%] Step 2800/6000 | Speed: 0.020571
+[ 48.3%] Step 2900/6000 | Speed: 0.025738
+[ 50.0%] Step 3000/6000 | Temperature: 1.0001 | Speed: 0.013124 | Position: (18.84, 17.12, 18.72)
+    [helix] R≈0.295, pitch≈1.23, |ω|≈0.0371
+    [helix-verify] circle-fit R=1.6, rms-resid=0.104
+    [helix-verify] geometric R≈0.00169, pitch≈0.0109, CV(R)≈1.78, CV(P)≈1.20
+[ 51.7%] Step 3100/6000 | Speed: 0.023194
+[ 53.3%] Step 3200/6000 | Speed: 0.032875
+[ 55.0%] Step 3300/6000 | Speed: 0.015587
+[ 56.7%] Step 3400/6000 | Speed: 0.015968
+[ 58.3%] Step 3500/6000 | Speed: 0.030788
+[ 60.0%] Step 3600/6000 | Temperature: 0.9995 | Speed: 0.025527 | Position: (19.13, 16.51, 19.69)
+    [helix] R≈0.282, pitch≈3.9, |ω|≈0.0374
+    [helix-verify] circle-fit R=1.03, rms-resid=0.137
+    [helix-verify] geometric R≈0.00182, pitch≈0.0117, CV(R)≈1.71, CV(P)≈1.15
+[ 61.7%] Step 3700/6000 | Speed: 0.016162
+[ 63.3%] Step 3800/6000 | Speed: 0.018790
+[ 65.0%] Step 3900/6000 | Speed: 0.016523
+[ 66.7%] Step 4000/6000 | Speed: 0.043268
+[ 68.3%] Step 4100/6000 | Speed: 0.027321
+[ 70.0%] Step 4200/6000 | Temperature: 0.9990 | Speed: 0.019988 | Position: (19.35, 17.17, 20.34)
+    [helix] R≈0.241, pitch≈2.94, |ω|≈0.0379
+    [helix-verify] circle-fit R=1.18, rms-resid=0.126
+    [helix-verify] geometric R≈0.00183, pitch≈0.0121, CV(R)≈1.76, CV(P)≈1.21
+[ 71.7%] Step 4300/6000 | Speed: 0.025321
+[ 73.3%] Step 4400/6000 | Speed: 0.010943
+[ 75.0%] Step 4500/6000 | Speed: 0.030933
+[ 76.7%] Step 4600/6000 | Speed: 0.007267
+[ 78.3%] Step 4700/6000 | Speed: 0.027765
+[ 80.0%] Step 4800/6000 | Temperature: 0.9983 | Speed: 0.033992 | Position: (20.24, 17.07, 20.64)
+    [helix] R≈0.452, pitch≈4.94, |ω|≈0.0375
+    [helix-verify] circle-fit R=2.99, rms-resid=0.216
+    [helix-verify] geometric R≈0.00185, pitch≈0.012, CV(R)≈1.71, CV(P)≈1.19
+[ 81.7%] Step 4900/6000 | Speed: 0.020777
+[ 83.3%] Step 5000/6000 | Speed: 0.017476
+[ 85.0%] Step 5100/6000 | Speed: 0.027292
+[ 86.7%] Step 5200/6000 | Speed: 0.038665
+[ 88.3%] Step 5300/6000 | Speed: 0.021322
+[ 90.0%] Step 5400/6000 | Temperature: 0.9977 | Speed: 0.022797 | Position: (20.32, 16.93, 21.74)
+    [helix] R≈0.324, pitch≈3.24, |ω|≈0.0374
+    [helix-verify] circle-fit R=55.1, rms-resid=0.221
+    [helix-verify] geometric R≈0.00189, pitch≈0.0121, CV(R)≈1.68, CV(P)≈1.19
+[ 91.7%] Step 5500/6000 | Speed: 0.019382
+[ 93.3%] Step 5600/6000 | Speed: 0.018836
+[ 95.0%] Step 5700/6000 | Speed: 0.034354
+[ 96.7%] Step 5800/6000 | Speed: 0.020101
+[ 98.3%] Step 5900/6000 | Speed: 0.025527
+[100.0%] Step 6000/6000 | Temperature: 0.9973 | Speed: 0.022533 | Position: (20.86, 17.64, 22.06)
+    [helix] R≈0.0978, pitch≈3.54, |ω|≈0.0394
+    [helix-verify] circle-fit R=47.8, rms-resid=0.203
+    [helix-verify] geometric R≈0.00186, pitch≈0.0117, CV(R)≈1.77, CV(P)≈1.27
+
+======================================================================
+Simulation completed!
+======================================================================
+
+Results:
+  Final speed (U): 0.022533
+  Average speed (U_avg): 0.022663
+  Expected speed (2/3 B1): 0.020000
+  Error (final): 0.002533 (12.66%)
+  Error (average): 0.002663 (13.31%)
+  ⚠ Significant deviation from theory
+
+Generating visualization...
+✓ Plot generated and displayed
+
+======================================================================
+Simulation finished successfully!
+======================================================================

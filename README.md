@@ -50,6 +50,21 @@ Simulate a squirmer with chiral motion:
 python scripts/run_single_squirmer.py --grid 48 --n0 10 --a 3.0 --B1 0.03 --C1 0.01 --misalign-deg 20 --steps 5000 --three-d
 ```
 
+### Static Helical Slip Visualization
+
+Render the surface slip vectors that drive the helical motion:
+
+```bash
+python scripts/visualize_helical_vectors.py \
+    --B1 0.03 \
+    --C1 0.02 \
+    --misalign-deg 25 \
+    --vector-scale 0.5 \
+    --show-both \
+    --save results/helical_vectors.png
+```
+Use `--vector-scale` to control the longest arrow (as a fraction of the sphere radius) and `--show-both` if you want vectors on both hemispheres (they are hidden by default). Zoom in/out within your plotting window for clarity.
+
 ### Command-Line Options
 
 | Option | Description | Default |
@@ -85,8 +100,9 @@ squirmer_mpcd/
 │   ├── squirmer.py        # Squirmer state and dynamics
 │   ├── streaming.py       # Particle streaming step
 │   └── types.py           # Type definitions
-├── scripts/                # Simulation scripts
-│   └── run_single_squirmer.py
+├── scripts/                # Simulation and visualization scripts
+│   ├── run_single_squirmer.py
+│   └── visualize_helical_vectors.py
 ├── tests/                  # Test suite
 │   └── test_speed_single_squirmer.py
 ├── results/                # Simulation outputs and figures
@@ -189,10 +205,24 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[Add your license information here]
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Citation
 
 If you use this code in your research, please cite:
 
-[Add citation information here]
+> [Add your paper or thesis title here]  
+> [Author Name(s)]  
+> [Journal/Conference/Institution, Year]
+
+Example BibTeX entry (edit to match your publication):
+
+```bibtex
+@article{squirmer_mpcd_yourkey,
+  title   = {Your Paper or Thesis Title},
+  author  = {Your Name and Coauthors},
+  journal = {Journal or Institution},
+  year    = {2024},
+  note    = {MPCD squirmer simulation code available at \url{https://github.com/your-username/squirmer_mpcd}}
+}
+```

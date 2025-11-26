@@ -90,3 +90,54 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Scientific computing / NumPy
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Simulation results and output
+results/*.png
+results/*.txt
+results/*.dat
+results/*.csv
+results/*.json
+results/*.pdf
+# Keep results directory structure but ignore generated files
+!results/.gitkeep
+
+# Data files
+*.dat
+*.csv
+*.tsv
+*.xlsx
+*.xls
+
+# Node.js (if used for any tooling)
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.backup
+
+# Large data files (NetCDF)
+*.nc
+*.nc4
+

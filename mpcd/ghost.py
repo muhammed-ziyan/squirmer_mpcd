@@ -42,6 +42,8 @@ def prepare_ghosts_per_cell(
     B1: float,
     B2: float,
     n0: float,
+    C1: float = 0.0,
+    swirl_axis: np.ndarray | None = None,
     wall_v: np.ndarray | None = None,
     wall_omega: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -95,7 +97,7 @@ def prepare_ghosts_per_cell(
         # Surface-based mean slip: project cell center on sphere
         ps = closest_point_on_sphere(c, center, radius)
         n_hat = surface_normal(ps, center)
-        us = slip_velocity_on_surface(n_hat, orientation, B1, B2)
+        us = slip_velocity_on_surface(n_hat, orientation, B1, B2, C1=C1, swirl_axis=swirl_axis)
         # add rigid-body wall velocity at surface point
         rx = ps - center
         uw = np.array([
@@ -117,6 +119,8 @@ def prepare_ghosts_per_cell_into(
     orientation: np.ndarray,
     B1: float,
     B2: float,
+    C1: float,
+    swirl_axis: np.ndarray,
     n0: float,
     wall_v: np.ndarray,
     wall_omega: np.ndarray,
@@ -154,7 +158,7 @@ def prepare_ghosts_per_cell_into(
             continue
         ps = closest_point_on_sphere(c, center, radius)
         n_hat = surface_normal(ps, center)
-        us = slip_velocity_on_surface(n_hat, orientation, B1, B2)
+        us = slip_velocity_on_surface(n_hat, orientation, B1, B2, C1=C1, swirl_axis=swirl_axis)
         rx = ps - center
         uw = np.array([
             wall_v[0] + wall_omega[1] * rx[2] - wall_omega[2] * rx[1],
@@ -163,5 +167,66 @@ def prepare_ghosts_per_cell_into(
         ], dtype=box.dtype)
         counts_out[cid] = n_g
         mu_out[cid, :] = uw + us
+
+
+def prepare_ghosts_per_cell_into_with_arm(
+    box: np.ndarray,
+    cell_size: float,
+    center: np.ndarray,
+    radius: float,
+    orientation: np.ndarray,
+    B1: float,
+    B2: float,
+    C1: float,
+    swirl_axis: np.ndarray,
+    n0: float,
+    wall_v: np.ndarray,
+    wall_omega: np.ndarray,
+    counts_out: np.ndarray,
+    mu_out: np.ndarray,
+    arm_out: np.ndarray,
+) -> None:
+    """In-place variant that also outputs a per-cell surface lever arm ps-center."""
+
+    from .domain import grid_shape
+    from .squirmer import slip_velocity_on_surface
+    from .geometry import closest_point_on_sphere, surface_normal
+
+    nx, ny, nz = grid_shape(box, cell_size)
+    n_cells = int(nx * ny * nz)
+    counts_out[:] = 0
+    mu_out[:] = 0
+    arm_out[:] = 0
+    cell_radius = np.sqrt(3.0) * 0.5 * cell_size
+    for cid in range(n_cells):
+        c = estimate_cell_center(cid, nx, ny, cell_size, box)
+        d = np.linalg.norm(c - center)
+        intersects = (d - cell_radius) < radius and (d + cell_radius) > radius
+        inside = d + cell_radius <= radius
+        outside = d - cell_radius >= radius
+        # Only apply ghosts in the near-surface shell (intersecting cells)
+        if outside or inside:
+            continue
+        if not intersects:
+            continue
+        frac = max(0.0, min(1.0, (radius + cell_radius - d) / (2 * cell_radius)))
+        if frac <= 0.0:
+            continue
+        lam = n0 * frac
+        n_g = np.random.poisson(lam)
+        if n_g <= 0:
+            continue
+        ps = closest_point_on_sphere(c, center, radius)
+        n_hat = surface_normal(ps, center)
+        us = slip_velocity_on_surface(n_hat, orientation, B1, B2, C1=C1, swirl_axis=swirl_axis)
+        rx = ps - center
+        uw = np.array([
+            wall_v[0] + wall_omega[1] * rx[2] - wall_omega[2] * rx[1],
+            wall_v[1] + wall_omega[2] * rx[0] - wall_omega[0] * rx[2],
+            wall_v[2] + wall_omega[0] * rx[1] - wall_omega[1] * rx[0],
+        ], dtype=box.dtype)
+        counts_out[cid] = n_g
+        mu_out[cid, :] = uw + us
+        arm_out[cid, :] = rx
 
 

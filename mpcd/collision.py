@@ -202,6 +202,8 @@ def collide_srd_with_ghosts(
     ghost_counts: np.ndarray,
     ghost_mu: np.ndarray,
     impulse_out: np.ndarray,  # shape (3,), accumulated impulse on squirmer
+    arm: np.ndarray | None = None,
+    torque_out: np.ndarray | None = None,   # shape (3,), accumulated torque on squirmer
 ) -> None:
     """SRD collision including ghost particles per cell to impose slip.
 
@@ -235,10 +237,14 @@ def collide_srd_with_ghosts(
     ca = np.cos(alpha)
     sa = np.sin(alpha)
 
-    # reset impulse
+    # reset impulse and torque
     impulse_out[0] = 0.0
     impulse_out[1] = 0.0
     impulse_out[2] = 0.0
+    if torque_out is not None:
+        torque_out[0] = 0.0
+        torque_out[1] = 0.0
+        torque_out[2] = 0.0
 
     for cid in prange(n_cells):
         start = offsets[cid]
@@ -355,8 +361,23 @@ def collide_srd_with_ghosts(
             py1 += mass * v[i, 1]
             pz1 += mass * v[i, 2]
         # Δp_real = p1 - p0; impulse on squirmer = -Δp_real
-        impulse_out[0] += (px0 - px1)
-        impulse_out[1] += (py0 - py1)
-        impulse_out[2] += (pz0 - pz1)
+        dpx = (px0 - px1)
+        dpy = (py0 - py1)
+        dpz = (pz0 - pz1)
+        impulse_out[0] += dpx
+        impulse_out[1] += dpy
+        impulse_out[2] += dpz
+
+        # Torque contribution using per-cell lever arm (surface point minus center)
+        if arm is not None and torque_out is not None:
+            rx = arm[cid, 0]
+            ry = arm[cid, 1]
+            rz = arm[cid, 2]
+            tx = ry * dpz - rz * dpy
+            ty = rz * dpx - rx * dpz
+            tz = rx * dpy - ry * dpx
+            torque_out[0] += tx
+            torque_out[1] += ty
+            torque_out[2] += tz
 
 
